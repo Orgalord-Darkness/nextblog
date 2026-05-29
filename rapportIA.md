@@ -7,6 +7,9 @@ Suggestions de code
 
 ### Conversations Copilot 
 
+Pourquoi je l'ai utilisé 
+Je rencontrais des erreurs bloquantes avec prisma et comme je ne m'y connais pas trop j'ai demandé à être guidé. 
+
 Problèmes rencontrés et explications fournies
 1. Erreur Prisma : @relation défini deux fois
 
@@ -153,7 +156,7 @@ Je m'étais fourvoyé sur la façon d'accéder à Prisma, en pensant pouvoir all
 
 Pourquoi je l'ai utilisé
 
-Je voulais mettre en place l'inscription utilisateur, la connexion et la mise à jour de la navbar selon l'état de la session. Je ne savais pas comment gérer les trois aspects principaux que sont la session, les cookies et le JWT dans Next.js.
+Je voulais mettre en place l'inscription utilisateur, la connexion et la mise à jour de la navbar selon l'état de la session. Je voulais un plan pour m'aider à l'implémenter. 
 
 Ce que j'ai demandé
 
@@ -162,3 +165,43 @@ J'ai demandé à être guidé sur l'inscription et la connexion avec du code sim
 Ce que j'ai compris
 
 Au départ je pensais que jose servait aussi à hasher les mots de passe, mais jose ne sert qu'à créer et vérifier des JWT. Le hachage des mots de passe se fait avec bcryptjs, qui génère un hash différent à chaque fois grâce au salt, ce qui fait que l'on ne peut pas comparer en re-hashant le mot de passe saisi : il faut obligatoirement passer par bcrypt.compare. J'avais aussi envisagé que la méthode Prisma retourne directement un booléen après vérification, mais la bonne séparation est de laisser lib/prisma chercher l'utilisateur en base et de faire la vérification du mot de passe dans lib/auth, qui est ensuite appelé par le Server Action. Pour les formulaires, j'ai compris qu'un formulaire peut appeler un Server Action via l'attribut action sans avoir besoin de useState ni de "use client", car c'est le navigateur qui collecte les valeurs des champs au moment du submit et le serveur les récupère dans un objet FormData.
+
+---
+
+### Claude Code (session authentification, CRUD, pages, Docker)
+
+Pourquoi je l'ai utilisé
+
+Je devais implémenter les fonctionnalités complètes d'un blog Next.js dans un temps limité. Partant d'une base de données Prisma quasiment configurée, il manquait le système d'authentification, les pages CRUD, l'espace admin, les pages publiques et une infrastructure Docker fonctionnelle. J'ai choisi d'utiliser l'IA pour aller plus vite sur les parties que je comprenais et poser des questions sur les parties que je comprenais moins. 
+
+Ce que j'ai demandé
+
+J'ai demandé d'identifier ce qui manquait pour la connexion utilisateur avec gestion des rôles, puis de mettre en place , de m'expliquer comment implémenter mooi même les route groups offline et online, le système d'authentification complet avec JWT et cookies, le CRUD des posts avec upload d'images, les pages publiques (blog, à propos, inscription, détail post), les pages admin pour modérer les contenus publiés, une recherche front-end sur la page d'accueil, et la correction de l'infrastructure Docker pour que les volumes, les migrations et le client Prisma fonctionnent correctement.
+
+Ce que j'ai compris
+
+Sur l'authentification : httpOnly empêche la lecture du cookie en JavaScript côté navigateur. "use server" en haut d'un fichier rend tout le fichier en server actions, dans une fonction c'est juste la fonction concernée. Si on falsifie le token, verifySession va retourner null car la signature ne correspond pas au secret.
+
+Sur les formulaires : la page login n'a pas besoin d'être un client component si on passe directement la server action dans action du formulaire. formAction est une action serveur Next, différente d'un action classique côté client.
+
+Sur les server actions : on fait Number(session.userId) parce qu'il faut que l'id soit du bon type, le JWT stockant tout en string. On stocke le chemin de l'image en base de données pour pouvoir l'afficher dans des balises Image avec l'attribut src. revalidatePath sert à régénérer le cache dans la logique de l'ISR.
+
+Sur les transactions Prisma : l'utilisateur en base n'est pas créé si la création du blog échoue, c'est le but de la transaction. Mais l'image créée avant la transaction reste en base de données avec aucune relation si la transaction échoue.
+
+Sur la logique client/serveur : il est impossible d'accéder à la base de données dans un composant client car c'est un appel au serveur qu'il faut faire. mkdir avec recursive true crée le dossier s'il n'existe pas, et ne fait rien s'il existe déjà.
+
+---
+
+### Claude Code (session questionnement sur ce que Claude m'a proposé)
+
+Pourquoi je l'ai utilisé
+
+Claude m'a produit du code que je considérais maîtrisé et que je n'avais le temps de produire, mais il y avait aussi des parties que je connaissais moins comme les raisons de certaines erreur, le chargement d'image... Je lui ai donc demander de m'expliquer. 
+
+Ce que j'ai demandé
+
+Des questions ciblées sur les concepts Next.js présents dans le projet : signature des server actions selon le contexte d'appel, comportement des cookies httpOnly et secure, fonctionnement du proxy, gestion des rôles, comportement de Prisma, dépendances du package.json, et logique client/serveur appliquée aux composants du projet.
+
+Ce que j'ai compris
+
+Le cookie secure true en permanence causerait un conflit avec npm run dev en développement car localhost n'est pas en HTTPS. notFound de Next permet d'appeler et de gérer une 404. La navbar sait quel composant afficher grâce au cookie de session qui contient le rôle récupéré par verifySession. Le catch dans le proxy capture les cas où la vérification JWT échoue comme un token expiré ou falsifié, et non pas le cas du mauvais rôle qui est géré dans le try avant le catch. Le proxy redirige un USER qui tente d'accéder à admin vers /user et non vers /login, car il a un JWT valide. L'ISR ne fonctionne pas dans ce projet parce que le layout offline appelle cookies() via verifySession, ce qui rend toutes les pages publiques dynamiques.
