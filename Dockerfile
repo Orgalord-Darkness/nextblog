@@ -1,11 +1,16 @@
-FROM node:22-alpine 
+FROM node:22-alpine
 
-WORKDIR /app 
+WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# DATABASE_URL factice nécessaire uniquement pour que prisma generate et next build
+# puissent s'initialiser — la vraie URL est injectée à l'exécution via docker-compose
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+ENV JWT_SECRET=build-placeholder
 
 RUN npx prisma generate
 

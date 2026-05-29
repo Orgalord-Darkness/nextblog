@@ -9,12 +9,13 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
 model User { 
   id    Int     @id @default(autoincrement()) 
   email String  @unique
+  password String
   name  String?
   posts Post[]
   blog Blog? @relation
@@ -22,24 +23,30 @@ model User {
 } 
 
 model Blog {
-  id Int  @id @default(autoincrement())
-  bio String 
-  author User @relation(fields: [authorId], references: [id]) 
-  authorId Int @unique  
-  avatar Image @relation(fields: [avatarId], references:[id])
-  avatarId Int @unique
+  id       Int    @id @default(autoincrement())
+  bio      String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId Int    @unique
+  avatar   Image? @relation(fields: [avatarId], references: [id])
+  avatarId Int?   @unique
   published Boolean @default(true)
+}
+
+model About {
+  id        Int      @id @default(autoincrement())
+  content   String
+  updatedAt DateTime @updatedAt
 }
 
 model Post { 
   id        Int     @id @default(autoincrement()) 
   title     String
-  content   String? @db.Text
+  content   String?
   published Boolean @default(true) 
   author    User    @relation(fields: [authorId], references: [id]) 
   authorId  Int
-  images Image @relation(fields: [imageId], references: [id])
-  imageId Int
+  images Image? @relation(fields: [imageId], references: [id])
+  imageId Int?
   created_at DateTime @default(now())
 } 
 
@@ -48,7 +55,7 @@ model Image {
   path String
   size Float
   format String
-  blog Blog? @relation 
-  blogId Int @unique
+  blog Blog? @relation
+  blogId Int? @unique
   posts Post[]
 }
