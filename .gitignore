@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — .env contient les valeurs de dev par défaut et est commité
+# les surcharges locales et de production ne le sont pas
+.env.local
+.env.production
+.env.production.local
+.env.*.local
 
 # vercel
 .vercel
