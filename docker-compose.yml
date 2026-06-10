@@ -2,17 +2,16 @@ services:
   db:
     image: postgres:17
     restart: always
-    env_file: .env
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nextblog
+      POSTGRES_USER: user
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U user -d nextblog"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,13 +19,19 @@ services:
   app:
     build: .
     restart: always
-    env_file: .env
     ports:
       - "8001:3000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/nextblog
+      JWT_SECRET: change-this-secret-before-production
+      NODE_ENV: development
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && npm start"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npx prisma migrate deploy && npm run dev"
 
 volumes:
   db_data:
